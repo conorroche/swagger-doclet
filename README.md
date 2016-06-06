@@ -879,6 +879,7 @@ These are options that you typically won't need to use unless for example, you w
 An example project using Dropwizard is included in `swagger-doclet-sample-dropwizard`. To get it running, run the following commands.
 
 ```
+$ mvn clean install # Need to build top-level package before building samples
 $ cd swagger-doclet-sample-dropwizard
 $ mvn package
 $ java -jar target/swagger-doclet-sample-dropwizard*.jar server sample.yml
