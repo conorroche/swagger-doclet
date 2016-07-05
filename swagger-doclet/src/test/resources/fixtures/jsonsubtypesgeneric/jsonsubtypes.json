@@ -1,0 +1,53 @@
+{
+    "apiVersion": "0",
+    "swaggerVersion": "1.2",
+    "basePath": "http://localhost:8080",
+    "resourcePath": "/jsonSubTypesResource",
+    "apis": [
+        {
+            "path": "/jsonSubTypesResource/animal",
+            "operations": [
+            	{
+                    "method": "GET",
+                    "nickname": "getAnimal",
+                    "type": "Animal"
+                }
+            ]
+        }
+    ],
+    "models": {
+    	"Animal": {
+            "id": "Animal",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            },
+            "required" : ["type"],
+            "subTypes" : ["Cat1", "Dog1"],
+            "discriminator" : "type"
+        },
+        "Cat1": {
+            "id": "Cat1",
+            "properties": {
+                "favoriteToy": {
+                    "type": "string"
+                }
+            }
+        },
+        "Dog1": {
+            "id": "Dog1",
+            "properties": {
+                "breed": {
+                    "type": "string"
+                },
+                "leashColor": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
