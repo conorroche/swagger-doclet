@@ -9,6 +9,7 @@ import com.sun.javadoc.AnnotationValue;
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.Parameter;
 import com.sun.javadoc.ProgramElementDoc;
+import com.sun.tools.javadoc.ParameterizedTypeImpl;
 import com.tenxerconsulting.swagger.doclet.DocletOptions;
 
 /**
@@ -89,8 +90,14 @@ public class AnnotationParser {
 	private ClassDoc getAnnotationClassDocValue(AnnotationDesc annotation, String key) {
 		for (AnnotationDesc.ElementValuePair evp : annotation.elementValues()) {
 			if (evp.element().name().equals(key)) {
-				ClassDoc val = (ClassDoc) evp.value().value();
-				return val;
+				Object val = evp.value().value();
+				if(val instanceof ClassDoc) {
+					return (ClassDoc) val;
+				}
+				if(val instanceof ParameterizedTypeImpl) {
+					ParameterizedTypeImpl pVal = (ParameterizedTypeImpl) val;
+					return pVal.asClassDoc();
+				}
 			}
 		}
 		return null;
