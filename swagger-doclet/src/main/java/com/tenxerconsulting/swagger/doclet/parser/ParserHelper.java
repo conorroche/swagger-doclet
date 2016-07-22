@@ -677,6 +677,9 @@ public class ParserHelper {
 		if (COLLECTION_TYPES.containsKey(javaType)) {
 			return COLLECTION_TYPES.get(javaType);
 		}
+        if (isJavaslangCollection(javaType)) {
+            return true;
+        }
 		try {
 			Class<?> clazz = lookupClass(javaType);
 			boolean res = java.util.Collection.class.isAssignableFrom(clazz);
@@ -687,6 +690,22 @@ public class ParserHelper {
 		} catch (ClassNotFoundException ex) {
 			return false;
 		}
+	}
+
+	private static Set<String> JAVASLANG_COLLECTION_TYPES = new HashSet<>();
+
+	private static boolean isJavaslangCollection(String javaType) {
+		if (JAVASLANG_COLLECTION_TYPES.isEmpty()) {
+			JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.Seq");
+			JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.Array");
+			JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.List");
+			JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.Vector");
+			JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.Queue");
+			JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.Set");
+            JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.HashSet");
+            JAVASLANG_COLLECTION_TYPES.add("javaslang.collection.Stack");
+		}
+		return JAVASLANG_COLLECTION_TYPES.contains(javaType);
 	}
 
 	private static Map<String, Boolean> MAP_TYPES = new HashMap<String, Boolean>();
@@ -700,6 +719,9 @@ public class ParserHelper {
 		if (MAP_TYPES.containsKey(javaType)) {
 			return MAP_TYPES.get(javaType);
 		}
+        if (isJavaslangMap(javaType)) {
+            return true;
+        }
 		try {
 			Class<?> clazz = lookupClass(javaType);
 			boolean res = java.util.Map.class.isAssignableFrom(clazz);
@@ -711,6 +733,19 @@ public class ParserHelper {
 			return false;
 		}
 	}
+
+    private static Set<String> JAVASLANG_MAP_TYPES = new HashSet<>();
+
+    private static boolean isJavaslangMap(String javaType) {
+        if (JAVASLANG_MAP_TYPES.isEmpty()) {
+            JAVASLANG_MAP_TYPES.add("javaslang.collection.Map");
+            JAVASLANG_MAP_TYPES.add("javaslang.collection.HashMap");
+            JAVASLANG_MAP_TYPES.add("javaslang.collection.LinkedHashMap");
+            JAVASLANG_MAP_TYPES.add("javaslang.collection.SortedMap");
+            JAVASLANG_MAP_TYPES.add("javaslang.collection.TreeMap");
+        }
+        return JAVASLANG_MAP_TYPES.contains(javaType);
+    }
 
 	/**
 	 * This gets whether the given parameter is a File data type
