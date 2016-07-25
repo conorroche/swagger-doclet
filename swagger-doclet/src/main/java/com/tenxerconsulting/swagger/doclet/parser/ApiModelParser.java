@@ -159,8 +159,9 @@ public class ApiModelParser {
 
 		// process sub types
 		for (ClassDoc subType : this.subTypeClasses) {
-
-			ApiModelParser subTypeParser = new ApiModelParser(this.options, this.translator, subType, this.viewClasses, false, this.models);
+			Set<Model> parentModels = new HashSet<>(this.parentModels);
+			parentModels.addAll(this.models);
+			ApiModelParser subTypeParser = new ApiModelParser(this.options, this.translator, subType, this.viewClasses, false, parentModels);
 			Set<Model> subTypeModesl = subTypeParser.parse();
 			this.models.addAll(subTypeModesl);
 		}

@@ -1,0 +1,48 @@
+{
+    "apiVersion" : "0",
+    "swaggerVersion" : "1.2",
+    "basePath" : "http://localhost:8080",
+    "resourcePath" : "/issue",
+    "apis" : [ {
+        "path" : "/issue",
+        "operations" : [ {
+            "method" : "POST",
+            "nickname" : "test",
+            "type" : "Response",
+            "parameters" : [ {
+                "type" : "Recursive-A",
+                "paramType" : "body",
+                "name" : "input",
+                "required" : true
+            } ]
+        } ]
+    } ],
+    "models" : {
+        "Recursive-AImpl" : {
+            "id" : "Recursive-AImpl",
+            "properties" : {
+                "b" : {
+                    "type" : "Recursive-B"
+                }
+            }
+        },
+        "Recursive-B" : {
+            "id" : "Recursive-B",
+            "properties" : { },
+            "subTypes" : [ "Recursive-BImpl" ]
+        },
+        "Recursive-A" : {
+            "id" : "Recursive-A",
+            "properties" : { },
+            "subTypes" : [ "Recursive-AImpl" ]
+        },
+        "Recursive-BImpl" : {
+            "id" : "Recursive-BImpl",
+            "properties" : {
+                "a" : {
+                    "type" : "Recursive-A"
+                }
+            }
+        }
+    }
+}
