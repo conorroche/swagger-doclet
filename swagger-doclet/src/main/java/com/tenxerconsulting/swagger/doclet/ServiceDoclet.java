@@ -1,5 +1,6 @@
 package com.tenxerconsulting.swagger.doclet;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,6 +82,8 @@ public class ServiceDoclet {
 		Map<String, Integer> options = new HashMap<String, Integer>();
 		options.put("-d", 2);
 		options.put("-docBasePath", 2);
+		options.put("-host", 2);
+		options.put("-schemes", 2);
 		options.put("-apiBasePath", 2);
 		options.put("-apiVersion", 2);
 		options.put("-resourceRootPath", 2);

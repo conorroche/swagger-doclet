@@ -20,12 +20,19 @@ import com.sun.javadoc.MethodDoc;
 import com.sun.javadoc.ParameterizedType;
 import com.sun.javadoc.Type;
 import com.sun.javadoc.TypeVariable;
+import com.tenxerconsulting.swagger.doclet.model.ModelWrapper;
+import com.tenxerconsulting.swagger.doclet.model.PropertyWrapper;
+import io.swagger.models.Model;
 import com.tenxerconsulting.swagger.doclet.DocletOptions;
-import com.tenxerconsulting.swagger.doclet.model.Model;
-import com.tenxerconsulting.swagger.doclet.model.Property;
 import com.tenxerconsulting.swagger.doclet.translator.NameBasedTranslator;
 import com.tenxerconsulting.swagger.doclet.translator.Translator;
 import com.tenxerconsulting.swagger.doclet.translator.Translator.OptionalName;
+import io.swagger.models.ModelImpl;
+import io.swagger.models.properties.ArrayProperty;
+import io.swagger.models.properties.PropertyBuilder;
+import io.swagger.models.properties.RefProperty;
+import io.swagger.models.properties.StringProperty;
+import io.swagger.models.refs.RefType;
 
 /**
  * The ApiModelParser represents a parser for api model classes which are used for parameters, resource method return types and
@@ -37,8 +44,8 @@ public class ApiModelParser {
 	private final DocletOptions options;
 	final Translator translator;
 	private final Type rootType;
-	private final Set<Model> models;
-	private final Set<Model> parentModels = new LinkedHashSet<>();
+	private final Set<ModelWrapper> models;
+	private final Set<ModelWrapper> parentModels = new LinkedHashSet<>();
 	private final ClassDoc[] viewClasses;
 	private final Collection<ClassDoc> docletClasses;
 	private final boolean inheritFields;
@@ -86,7 +93,7 @@ public class ApiModelParser {
 	 * @param inheritFields whether to inherit fields from super types
 	 * @param parentModels parent type models
 	 */
-	ApiModelParser(DocletOptions options, Translator translator, Type rootType, ClassDoc[] viewClasses, boolean inheritFields, Set<Model> parentModels) {
+	ApiModelParser(DocletOptions options, Translator translator, Type rootType, ClassDoc[] viewClasses, boolean inheritFields, Set<ModelWrapper> parentModels) {
 
 		this(options, translator, rootType, viewClasses, null, inheritFields);
 		this.parentModels.clear();
@@ -117,7 +124,7 @@ public class ApiModelParser {
 			}
 		}
 		this.docletClasses = docletClasses;
-		this.models = new LinkedHashSet<Model>();
+		this.models = new LinkedHashSet<ModelWrapper>();
 
 		if (rootType.asClassDoc() != null && rootType.asClassDoc().superclass() != null) {
 			AnnotationParser p = new AnnotationParser(rootType.asClassDoc().superclass(), this.options);
@@ -153,7 +160,7 @@ public class ApiModelParser {
 	 * This parsers a model class built from parsing this class
 	 * @return The set of model classes
 	 */
-	public Set<Model> parse() {
+	public Set<ModelWrapper> parse() {
 		this.subTypeClasses.clear();
 		parseModel(this.rootType, false);
 
@@ -161,7 +168,7 @@ public class ApiModelParser {
 		for (ClassDoc subType : this.subTypeClasses) {
 
 			ApiModelParser subTypeParser = new ApiModelParser(this.options, this.translator, subType, this.viewClasses, false, this.models);
-			Set<Model> subTypeModesl = subTypeParser.parse();
+			Set<ModelWrapper> subTypeModesl = subTypeParser.parse();
 			this.models.addAll(subTypeModesl);
 		}
 
@@ -172,7 +179,7 @@ public class ApiModelParser {
 
 		String qName = type.qualifiedTypeName();
 		boolean isPrimitive = ParserHelper.isPrimitive(type, this.options);
-		boolean isJavaxType = qName.startsWith("javax.");
+		boolean isJavaxType = ParserHelper.isJavaxType(qName);
 		boolean isBaseObject = qName.equals("java.lang.Object");
 		boolean isClass = qName.equals("java.lang.Class");
 		boolean isCollection = ParserHelper.isCollection(qName);
@@ -226,7 +233,7 @@ public class ApiModelParser {
 		}
 
 		Map<String, TypeRef> types = findReferencedTypes(classDoc, nested);
-		Map<String, Property> elements = findReferencedElements(classDoc, types, nested);
+		Map<String, PropertyWrapper> elements = findReferencedElements(classDoc, types, nested);
 
 		if (!elements.isEmpty() || classDoc.superclass() != null) {
 
@@ -280,9 +287,9 @@ public class ApiModelParser {
 					discriminator = val;
 					// auto add as model field if not already done
 					if (!elements.containsKey(discriminator)) {
-						Property discriminatorProp = new Property(discriminator, null, "string", null, null, null, null, null, null, null, null, null, null,
-								null);
-						elements.put(discriminator, discriminatorProp);
+						StringProperty discriminatorProp = new StringProperty();
+						PropertyWrapper discriminatorPropWrapper = new PropertyWrapper(discriminator, null, discriminatorProp);
+						elements.put(discriminator, discriminatorPropWrapper);
 					}
 					// auto add discriminator to required fields
 					if (requiredFields == null || !requiredFields.contains(discriminator)) {
@@ -295,7 +302,16 @@ public class ApiModelParser {
 				}
 			}
 
-			this.models.add(new Model(modelId, elements, requiredFields, optionalFields, subTypes, discriminator));
+			ModelImpl model = new ModelImpl();
+			model.setReference(modelId);
+			model.setType(ModelImpl.OBJECT);
+			model.setRequired(requiredFields);
+			model.setDiscriminator(discriminator);
+			// TODO support subTypes
+
+			ModelWrapper modelWrapper = new ModelWrapper(model, elements);
+
+			this.models.add(modelWrapper);
 			parseNestedModels(types.values());
 		}
 	}
@@ -358,6 +374,12 @@ public class ApiModelParser {
 			}
 
 			classes.add(classDoc);
+			if (classDoc.isInterface()) {
+				for (ClassDoc iClassDoc: classDoc.interfaces()) {
+					classes.add(iClassDoc);
+				}
+				break;
+			}
 			classDoc = classDoc.superclass();
 		}
 		Collections.reverse(classes);
@@ -732,9 +754,9 @@ public class ApiModelParser {
 
 	}
 
-	private Map<String, Property> findReferencedElements(ClassDoc classDoc, Map<String, TypeRef> types, boolean nested) {
+	private Map<String, PropertyWrapper> findReferencedElements(ClassDoc classDoc, Map<String, TypeRef> types, boolean nested) {
 
-		Map<String, Property> elements = new LinkedHashMap<String, Property>();
+		Map<String, PropertyWrapper> elements = new LinkedHashMap<>();
 
 		for (Map.Entry<String, TypeRef> entry : types.entrySet()) {
 
@@ -828,9 +850,10 @@ public class ApiModelParser {
 				format = typeRef.format;
 			}
 
-			Property property = new Property(typeRef.rawName, typeRef.paramCategory, propertyType, format, typeRef.description, itemsRef, itemsType,
+			PropertyWrapper propertyWrapper = buildPropertyWrapper(typeRef.rawName, typeRef.paramCategory, propertyType, format, typeRef.description, itemsRef, itemsType,
 					itemsFormat, itemsAllowableValues, uniqueItems, allowableValues, typeRef.min, typeRef.max, typeRef.defaultValue);
-			elements.put(typeName, property);
+
+			elements.put(typeName, propertyWrapper);
 		}
 		return elements;
 	}
@@ -897,7 +920,7 @@ public class ApiModelParser {
 		return type;
 	}
 
-	private boolean alreadyStoredType(Type type, Set<Model> apiModels) {
+	private boolean alreadyStoredType(Type type, Set<ModelWrapper> apiModels) {
 
 		// if a collection then the type to check is the param type
 		Type containerOf = ParserHelper.getContainerType(type, this.varsToTypes, null);
@@ -909,12 +932,35 @@ public class ApiModelParser {
 		final ClassDoc[] viewClasses = this.viewClasses;
 		final String modelId = this.translator.typeName(typeToCheck, this.options.isUseFullModelIds(), viewClasses).value();
 
-		return filter(apiModels, new Predicate<Model>() {
+		return filter(apiModels, new Predicate<ModelWrapper>() {
 
-			public boolean apply(Model model) {
-				return model.getId().equals(modelId);
+			public boolean apply(ModelWrapper model) {
+				return model.getModel().getReference().equals(modelId);
 			}
 		}).size() > 0;
 	}
 
+	private PropertyWrapper buildPropertyWrapper(String rawFieldName, String paramCategory, String type, String format, String description, String itemsRef, String itemsType,
+												 String itemsFormat, List<String> itemsAllowableValues, Boolean uniqueItems, List<String> allowableValues, String minimum, String maximum, String defaultValue) {
+		Map<PropertyBuilder.PropertyId, Object> args = new HashMap<>();
+		args.put(PropertyBuilder.PropertyId.DESCRIPTION, description);
+		args.put(PropertyBuilder.PropertyId.ENUM, allowableValues);
+		args.put(PropertyBuilder.PropertyId.UNIQUE_ITEMS, uniqueItems);
+		args.put(PropertyBuilder.PropertyId.MINIMUM, minimum);
+		args.put(PropertyBuilder.PropertyId.MAXIMUM, maximum);
+		args.put(PropertyBuilder.PropertyId.DEFAULT, defaultValue);
+
+		io.swagger.models.properties.Property property = PropertyBuilder.build(type, format, args);
+
+		// if PropertyBuilder.build is null then this is a RefProperty
+		if (property == null) {
+			property = new RefProperty(type);
+		}
+
+		if (property instanceof ArrayProperty) {
+			((ArrayProperty) property).setItems(ParserHelper.buildItems(itemsRef, itemsType, itemsFormat, itemsAllowableValues, uniqueItems));
+		}
+
+		return new PropertyWrapper(rawFieldName, paramCategory, property);
+	}
 }

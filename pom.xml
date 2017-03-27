@@ -13,6 +13,7 @@
     </description>
 
 	<properties>
+		<swagger.version>1.5.12</swagger.version>
 		<dropwizard.version>0.6.2</dropwizard.version>
 		<jetty.version>8.1.10.v20130312</jetty.version>
 		<orig.jackson.version>1.9.13</orig.jackson.version>
@@ -127,7 +128,6 @@
 	</profiles>
 
 	<dependencies>
-
 		<!-- jaxrs doclet -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -139,6 +139,12 @@
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.swagger</groupId>
+			<artifactId>swagger-models</artifactId>
+			<version>${swagger.version}</version>
 			<scope>provided</scope>
 		</dependency>
 

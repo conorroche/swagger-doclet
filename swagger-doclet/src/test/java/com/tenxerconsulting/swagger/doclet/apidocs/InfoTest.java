@@ -31,7 +31,7 @@ public class InfoTest {
 		this.options = new DocletOptions().setRecorder(this.recorderMock).setIncludeSwaggerUi(false);
 
 		final ApiInfo apiInfo = loadFixture("/fixtures/info/apiinfo.json", ApiInfo.class);
-		this.options.setApiInfo(apiInfo);
+//		this.options.setApiInfo(apiInfo);
 	}
 
 	@Test

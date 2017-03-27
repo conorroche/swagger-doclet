@@ -26,16 +26,13 @@ import com.sun.javadoc.Parameter;
 import com.sun.javadoc.Type;
 import com.sun.javadoc.TypeVariable;
 import com.tenxerconsulting.swagger.doclet.DocletOptions;
-import com.tenxerconsulting.swagger.doclet.model.ApiParameter;
-import com.tenxerconsulting.swagger.doclet.model.ApiResponseMessage;
+import com.tenxerconsulting.swagger.doclet.model.*;
 import com.tenxerconsulting.swagger.doclet.model.HttpMethod;
-import com.tenxerconsulting.swagger.doclet.model.Method;
-import com.tenxerconsulting.swagger.doclet.model.Model;
-import com.tenxerconsulting.swagger.doclet.model.Oauth2Scope;
-import com.tenxerconsulting.swagger.doclet.model.OperationAuthorizations;
-import com.tenxerconsulting.swagger.doclet.model.Property;
 import com.tenxerconsulting.swagger.doclet.translator.Translator;
 import com.tenxerconsulting.swagger.doclet.translator.Translator.OptionalName;
+import io.swagger.models.*;
+import io.swagger.models.properties.*;
+import io.swagger.models.refs.RefType;
 
 /**
  * The ApiMethodParser represents a parser for resource methods
@@ -54,7 +51,7 @@ public class ApiMethodParser {
 	private final DocletOptions options;
 	private final Translator translator;
 	private final MethodDoc methodDoc;
-	private final Set<Model> models;
+	private final Set<ModelWrapper> models;
 	private final HttpMethod httpMethod;
 	private final Collection<ClassDoc> classes;
 	private final String classDefaultErrorType;
@@ -73,7 +70,7 @@ public class ApiMethodParser {
 		this.translator = options.getTranslator();
 		this.parentPath = parentPath;
 		this.methodDoc = methodDoc;
-		this.models = new LinkedHashSet<Model>();
+		this.models = new LinkedHashSet<>();
 		this.httpMethod = ParserHelper.resolveMethodHttpMethod(methodDoc);
 		this.parentMethod = null;
 		this.classDefaultErrorType = classDefaultErrorType;
@@ -136,18 +133,31 @@ public class ApiMethodParser {
 			return null;
 		}
 
-		String path = this.parentPath + methodPath;
-                if ("".equals(path)) {
-                    path = "/";
-                }
+		String path;
+		if (this.parentPath.equals("/")) {
+			path = methodPath;
+		} else {
+			path = this.parentPath + methodPath;
+		}
 
 		// build params
-		List<ApiParameter> parameters = this.generateParameters();
+		List<io.swagger.models.parameters.Parameter> parameters = this.generateParameters();
 
 		ClassDoc[] viewClasses = ParserHelper.getInheritableJsonViews(this.methodDoc, this.options);
 
+		Map<String, Response> responseMap = new HashMap<>();
+
 		// build response messages
-		List<ApiResponseMessage> responseMessages = generateResponseMessages(viewClasses);
+		for (ApiResponseMessage responseMessage: generateResponseMessages(viewClasses)) {
+			Response response = new Response();
+
+			response.setDescription(responseMessage.getMessage());
+
+			io.swagger.models.properties.Property property = new RefProperty(RefType.DEFINITION.getInternalPrefix() + responseMessage.getResponseModel());
+			response.setSchema(property);
+
+			responseMap.put(String.valueOf(responseMessage.getCode()), response);
+		}
 
 		// ************************************
 		// Return type
@@ -234,16 +244,6 @@ public class ApiMethodParser {
 		List<String> returnTypeAllowableValues = null;
 		if (returnType != null) {
 			returnTypeAllowableValues = ParserHelper.getAllowableValues(returnType.asClassDoc());
-			if (returnTypeAllowableValues != null) {
-				returnTypeName = "string";
-			}
-		}
-
-		Boolean returnTypeUniqueItems = null;
-		if (returnType != null && returnTypeName.equals("array")) {
-			if (ParserHelper.isSet(returnType.qualifiedTypeName())) {
-				returnTypeUniqueItems = Boolean.TRUE;
-			}
 		}
 
 		String tagFormat = returnTypeReader.getFieldFormatValue(this.methodDoc, returnType);
@@ -251,13 +251,46 @@ public class ApiMethodParser {
 			returnTypeFormat = tagFormat;
 		}
 
-		String returnTypeMinimum = returnTypeReader.getFieldMin(this.methodDoc, returnType);
-		String returnTypeMaximum = returnTypeReader.getFieldMax(this.methodDoc, returnType);
-		String returnTypeDefaultValue = returnTypeReader.getFieldDefaultValue(this.methodDoc, returnType);
+		io.swagger.models.properties.Property property;
+		if (returnType != null && returnTypeName.equals("array")) {
+			io.swagger.models.properties.Property items = ParserHelper.buildItems(
+					returnTypeItemsRef,
+					returnTypeItemsType,
+					returnTypeItemsFormat,
+					returnTypeItemsAllowableValues,
+					false
+			);
+
+			ArrayProperty arrayProperty = new ArrayProperty(items);
+			if (ParserHelper.isSet(returnType.qualifiedTypeName())) {
+				arrayProperty.setUniqueItems(true);
+			}
+
+			property = arrayProperty;
+
+		} else {
+			Map<PropertyBuilder.PropertyId, Object> args = new HashMap<>();
+			args.put(PropertyBuilder.PropertyId.MINIMUM, returnTypeReader.getFieldMin(this.methodDoc, returnType));
+			args.put(PropertyBuilder.PropertyId.MAXIMUM, returnTypeReader.getFieldMax(this.methodDoc, returnType));
+			args.put(PropertyBuilder.PropertyId.DEFAULT, returnTypeReader.getFieldDefaultValue(this.methodDoc, returnType));
+			args.put(PropertyBuilder.PropertyId.ENUM, returnTypeAllowableValues);
+
+			property = PropertyBuilder.build(returnTypeName, returnTypeFormat, args);
+
+            if (property == null) {
+				property = new RefProperty(RefType.DEFINITION.getInternalPrefix() + returnTypeName);
+			}
+		}
 
 		if (modelType != null && this.options.isParseModels()) {
 			this.models.addAll(new ApiModelParser(this.options, this.translator, modelType, viewClasses, this.classes).addVarsToTypes(varsToTypes).parse());
 		}
+
+		Response defaultResponse = new Response();
+
+		defaultResponse.setSchema(property);
+		defaultResponse.setDescription("");
+		responseMap.put("default", defaultResponse);
 
 		// ************************************
 		// Summary and notes
@@ -299,12 +332,12 @@ public class ApiMethodParser {
 		}
 
 		// final result!
-		return new Method(this.httpMethod, this.methodDoc.name(), path, parameters, responseMessages, summary, notes, returnTypeName, returnTypeFormat,
-				returnTypeMinimum, returnTypeMaximum, returnTypeDefaultValue, returnTypeAllowableValues, returnTypeUniqueItems, returnTypeItemsRef,
-				returnTypeItemsType, returnTypeItemsFormat, returnTypeItemsAllowableValues, consumes, produces, authorizations, deprecated);
+		return new Method(this.httpMethod, this.methodDoc.name(), path, parameters, summary, notes,
+				responseMap, consumes, produces, authorizations, deprecated);
 	}
 
 	private OperationAuthorizations generateAuthorizations() {
+		// TODO this needs to be updated
 		OperationAuthorizations authorizations = null;
 
 		// build map of scopes from the api auth
@@ -393,6 +426,9 @@ public class ApiMethodParser {
 						int statusCode = Integer.parseInt(matcher.group(1).trim());
 						// trim special chars the desc may start with
 						String desc = ParserHelper.trimLeadingChars(matcher.group(2), '|', '-');
+						if (desc == null) {
+							desc = "";
+						}
 
 						// see if it has a custom response model
 						String responseModelClass = null;
@@ -465,9 +501,9 @@ public class ApiMethodParser {
 		return responseMessages;
 	}
 
-	private List<ApiParameter> generateParameters() {
+	private List<io.swagger.models.parameters.Parameter> generateParameters() {
 		// parameters
-		List<ApiParameter> parameters = new LinkedList<ApiParameter>();
+		List<io.swagger.models.parameters.Parameter> parameters = new LinkedList<>();
 
 		// read whether the method consumes multipart
 		List<String> consumes = ParserHelper.getConsumes(this.methodDoc, this.options);
@@ -485,14 +521,13 @@ public class ApiMethodParser {
 			if ("composite".equals(paramCategory)) {
 				Type paramType = parameter.type();
 				ApiModelParser modelParser = new ApiModelParser(this.options, this.translator, paramType, consumesMultipart, true);
-				Set<Model> models = modelParser.parse();
+				Set<ModelWrapper> models = modelParser.parse();
 				String rootModelId = modelParser.getRootModelId();
-				for (Model model : models) {
-					if (model.getId().equals(rootModelId)) {
-						Map<String, Property> modelProps = model.getProperties();
-						for (Map.Entry<String, Property> entry : modelProps.entrySet()) {
-							Property property = entry.getValue();
-							String rawFieldName = property.getRawFieldName();
+				for (ModelWrapper modelWrapper : models) {
+					io.swagger.models.Model model = modelWrapper.getModel();
+					if (model.getReference().equals(rootModelId)) {
+						for (Map.Entry<String, PropertyWrapper> entry: modelWrapper.getProperties().entrySet()) {
+							String rawFieldName = entry.getValue().getRawFieldName();
 							allParamNames.add(rawFieldName);
 						}
 					}
@@ -515,7 +550,7 @@ public class ApiMethodParser {
 				continue;
 			}
 
-			List<ApiParameter> apiParams = paramReader.buildApiParams(this.methodDoc, parameter, consumesMultipart, allParamNames, this.models);
+			List<io.swagger.models.parameters.Parameter> apiParams = paramReader.buildApiParams(this.methodDoc, parameter, consumesMultipart, allParamNames, this.models);
 			addUniqueParam(addedParamNames, apiParams, parameters);
 		}
 
@@ -525,19 +560,19 @@ public class ApiMethodParser {
 		}
 
 		// add class level parameters
-		List<ApiParameter> classLevelParams = paramReader.readClassLevelParameters(this.models);
+		List<io.swagger.models.parameters.Parameter> classLevelParams = paramReader.readClassLevelParameters(this.models);
 		addUniqueParam(addedParamNames, classLevelParams, parameters);
 
 		// add on any implicit params
-		List<ApiParameter> implicitParams = paramReader.readImplicitParameters(this.methodDoc, consumesMultipart, this.models);
+		List<io.swagger.models.parameters.Parameter> implicitParams = paramReader.readImplicitParameters(this.methodDoc, consumesMultipart, this.models);
 		addUniqueParam(addedParamNames, implicitParams, parameters);
 
 		return parameters;
 	}
 
-	private void addUniqueParam(Set<String> addedParamNames, List<ApiParameter> paramsToAdd, List<ApiParameter> targetList) {
+	private void addUniqueParam(Set<String> addedParamNames, List<io.swagger.models.parameters.Parameter> paramsToAdd, List<io.swagger.models.parameters.Parameter> targetList) {
 		if (paramsToAdd != null) {
-			for (ApiParameter apiParam : paramsToAdd) {
+			for (io.swagger.models.parameters.Parameter apiParam : paramsToAdd) {
 				if (!addedParamNames.contains(apiParam.getName())) {
 					addedParamNames.add(apiParam.getName());
 					targetList.add(apiParam);
@@ -550,7 +585,7 @@ public class ApiMethodParser {
 	 * This gets the parsed models found for this method
 	 * @return the set of parsed models found for this method
 	 */
-	public Set<Model> models() {
+	public Set<ModelWrapper> models() {
 		return this.models;
 	}
 
@@ -627,7 +662,9 @@ public class ApiMethodParser {
 			// lookup the type from the doclet classes
 			customType = ParserHelper.findModel(this.classes, customTypeName);
 			if (customType == null) {
-				raiseCustomTypeNotFoundError(customTypeName);
+			    if (this.options.isLogDebug()) {
+			    	System.out.println("Warning: couldn't find model for customType {" + customTypeName + "}");
+				}
 			} else {
 				customType = firstNonNull(ApiModelParser.getReturnType(this.options, customType), customType);
 
@@ -678,7 +715,7 @@ public class ApiMethodParser {
 		}
 	}
 
-	private void raiseCustomTypeNotFoundError(String customType) {
+	static void raiseCustomTypeNotFoundError(String customType) {
 		throw new IllegalStateException(
 				"Could not find the source for the custom response class: "
 						+ customType

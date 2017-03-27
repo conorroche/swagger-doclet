@@ -40,7 +40,7 @@ public class IncludeApiDeclarationsTest {
 		extraApiDeclarations.add(api1);
 		extraApiDeclarations.add(api2);
 		extraApiDeclarations.add(api3);
-		this.options.setExtraApiDeclarations(extraApiDeclarations);
+//		this.options.setExtraApiDeclarations(extraApiDeclarations);
 	}
 
 	@Test

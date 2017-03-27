@@ -15,8 +15,6 @@ import java.util.Properties;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenxerconsulting.swagger.doclet.model.ApiAuthorizations;
-import com.tenxerconsulting.swagger.doclet.model.ApiDeclaration;
-import com.tenxerconsulting.swagger.doclet.model.ApiInfo;
 import com.tenxerconsulting.swagger.doclet.parser.NamingConvention;
 import com.tenxerconsulting.swagger.doclet.parser.ParserHelper;
 import com.tenxerconsulting.swagger.doclet.parser.ResponseMessageSortMode;
@@ -25,6 +23,8 @@ import com.tenxerconsulting.swagger.doclet.translator.AnnotationAwareTranslator;
 import com.tenxerconsulting.swagger.doclet.translator.FirstNotNullTranslator;
 import com.tenxerconsulting.swagger.doclet.translator.NameBasedTranslator;
 import com.tenxerconsulting.swagger.doclet.translator.Translator;
+import io.swagger.models.Info;
+import io.swagger.models.Path;
 
 /**
  * The DocletOptions represents the supported options for this doclet.
@@ -81,15 +81,15 @@ public class DocletOptions {
 			} else if (option[0].equals("-apiAuthorizationsFile")) {
 				parsedOptions.apiAuthorizations = loadModelFromJson("-apiAuthorizationsFile", option[1], ApiAuthorizations.class);
 			} else if (option[0].equals("-apiInfoFile")) {
-				parsedOptions.apiInfo = loadModelFromJson("-apiInfoFile", option[1], ApiInfo.class);
+				parsedOptions.apiInfo = loadModelFromJson("-apiInfoFile", option[1], Info.class);
 
 			} else if (option[0].equals("-extraApiDeclarations")) {
-				List<ApiDeclaration> extraApiDeclarations = new ArrayList<ApiDeclaration>();
+				List<Path> extraApiDeclarations = new ArrayList<>();
 				String[] filePaths = option[1].split(",");
 				for (String filePath : filePaths) {
 					filePath = filePath.trim();
-					ApiDeclaration api = loadModelFromJson("-extraApiDeclarations", filePath, ApiDeclaration.class);
-					extraApiDeclarations.add(api);
+					Path path = loadModelFromJson("-extraApiDeclarations", filePath, Path.class);
+					extraApiDeclarations.add(path);
 				}
 				if (!extraApiDeclarations.isEmpty()) {
 					parsedOptions.extraApiDeclarations = extraApiDeclarations;
@@ -119,6 +119,10 @@ public class DocletOptions {
 						}
 					}
 				}
+			} else if (option[0].equals("-host")) {
+				parsedOptions.host = option[1];
+			} else if (option[0].equals("-schemes")) {
+				parsedOptions.schemes.addAll(asList(copyOfRange(option, 1, option.length)));
 			} else if (option[0].equals("-docBasePath")) {
 				parsedOptions.docBasePath = option[1];
 			} else if (option[0].equals("-apiBasePath")) {
@@ -372,6 +376,7 @@ public class DocletOptions {
 	}
 
 	private File outputDirectory;
+	private String host = null;
 	private String docBasePath = null;
 	private String apiBasePath = "http://localhost:8080";
 	private String swaggerUiPath = null;
@@ -384,6 +389,8 @@ public class DocletOptions {
 	private boolean profileMode = false;
 
 	private Properties variableReplacements;
+
+	private List<String> schemes;
 
 	private List<String> excludeResourcePrefixes;
 	private List<String> includeResourcePrefixes;
@@ -493,9 +500,9 @@ public class DocletOptions {
 
 	private ApiAuthorizations apiAuthorizations;
 
-	private ApiInfo apiInfo;
+	private Info apiInfo;
 
-	private List<ApiDeclaration> extraApiDeclarations;
+	private List<Path> extraApiDeclarations;
 
 	private Recorder recorder;
 	private Translator translator;
@@ -504,6 +511,9 @@ public class DocletOptions {
 	 * This creates a DocletOptions
 	 */
 	public DocletOptions() {
+
+		this.schemes = new ArrayList<>();
+		this.schemes.add("http");
 
 		this.responseMessageTags = new ArrayList<String>();
 		this.responseMessageTags.add("responseMessage");
@@ -651,6 +661,7 @@ public class DocletOptions {
 		this.paramsAllowableValuesTags.add("allowableValues");
 
 		this.resourceTags = new ArrayList<String>();
+		this.resourceTags.add("resourceTag");
 		this.resourceTags.add("parentEndpointName");
 		this.resourceTags.add("resourcePath");
 		this.resourceTags.add("resource");
@@ -859,6 +870,22 @@ public class DocletOptions {
 
 	public String getApiVersion() {
 		return this.apiVersion;
+	}
+
+	public String getHost() {
+		return host;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	public List<String> getSchemes() {
+		return schemes;
+	}
+
+	public void setSchemes(List<String> schemes) {
+		this.schemes = schemes;
 	}
 
 	/**
@@ -1717,7 +1744,7 @@ public class DocletOptions {
 	 * This gets the apiInfo
 	 * @return the apiInfo
 	 */
-	public ApiInfo getApiInfo() {
+	public Info getApiInfo() {
 		return this.apiInfo;
 	}
 
@@ -1726,7 +1753,7 @@ public class DocletOptions {
 	 * @param apiInfo the apiInfo to set
 	 * @return this
 	 */
-	public DocletOptions setApiInfo(ApiInfo apiInfo) {
+	public DocletOptions setApiInfo(Info apiInfo) {
 		this.apiInfo = apiInfo;
 		return this;
 	}
@@ -1735,7 +1762,7 @@ public class DocletOptions {
 	 * This gets the extraApiDeclarations
 	 * @return the extraApiDeclarations
 	 */
-	public List<ApiDeclaration> getExtraApiDeclarations() {
+	public List<Path> getExtraApiDeclarations() {
 		return this.extraApiDeclarations;
 	}
 
@@ -1743,7 +1770,7 @@ public class DocletOptions {
 	 * This sets the extraApiDeclarations
 	 * @param extraApiDeclarations the extraApiDeclarations to set
 	 */
-	public DocletOptions setExtraApiDeclarations(List<ApiDeclaration> extraApiDeclarations) {
+	public DocletOptions setExtraApiDeclarations(List<Path> extraApiDeclarations) {
 		this.extraApiDeclarations = extraApiDeclarations;
 		return this;
 	}

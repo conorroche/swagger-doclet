@@ -40,22 +40,22 @@ public class Operation {
 	public Operation(Method method) {
 		this.method = method.getMethod();
 		this.nickname = emptyToNull(method.getMethodName());
-		this.type = emptyToNull(method.getReturnType());
-		this.format = emptyToNull(method.getReturnTypeFormat());
-		if (method.getReturnTypeItemsRef() != null || method.getReturnTypeItemsType() != null) {
-			this.items = new PropertyItems(method.getReturnTypeItemsRef(), method.getReturnTypeItemsType(), method.getReturnTypeItemsFormat(),
-					method.getReturnTypeItemsAllowableValues());
-
-		}
-		this.uniqueItems = method.getReturnTypeUniqueItems();
-		this.allowableValues = method.getReturnTypeAllowableValues();
-		this.minimum = method.getReturnTypeMinimum();
-		this.maximum = method.getReturnTypeMaximum();
-		this.defaultValue = method.getReturnTypeDefaultValue();
-		this.parameters = method.getParameters().isEmpty() ? null : method.getParameters();
-		this.responseMessages = method.getResponseMessages().isEmpty() ? null : method.getResponseMessages();
-		this.summary = emptyToNull(method.getSummary());
-		this.notes = emptyToNull(method.getNotes());
+//		this.type = emptyToNull(method.getReturnType());
+//		this.format = emptyToNull(method.getReturnTypeFormat());
+//		if (method.getReturnTypeItemsRef() != null || method.getReturnTypeItemsType() != null) {
+//			this.items = new PropertyItems(method.getReturnTypeItemsRef(), method.getReturnTypeItemsType(), method.getReturnTypeItemsFormat(),
+//					method.getReturnTypeItemsAllowableValues());
+//
+//		}
+//		this.uniqueItems = method.getReturnTypeUniqueItems();
+//		this.allowableValues = method.getReturnTypeAllowableValues();
+//		this.minimum = method.getReturnTypeMinimum();
+//		this.maximum = method.getReturnTypeMaximum();
+//		this.defaultValue = method.getReturnTypeDefaultValue();
+//		this.parameters = method.getParameters().isEmpty() ? null : method.getParameters();
+//		this.responseMessages = method.getResponseMessages().isEmpty() ? null : method.getResponseMessages();
+//		this.summary = emptyToNull(method.getSummary());
+//		this.notes = emptyToNull(method.getNotes());
 		this.consumes = method.getConsumes() == null || method.getConsumes().isEmpty() ? null : method.getConsumes();
 		this.produces = method.getProduces() == null || method.getProduces().isEmpty() ? null : method.getProduces();
 		this.authorizations = method.getAuthorizations();

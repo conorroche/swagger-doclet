@@ -44,6 +44,25 @@
             ]
         },
         {
+            "path": "/a/{id}/sub/2",
+            "operations": [
+                {
+                    "method": "POST",
+                    "nickname": "z",
+                    "type": "SubSubData",
+                    "parameters": [
+
+                        {
+                            "paramType": "path",
+                            "name": "id",
+                            "type": "string",
+                            "required" : true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "path": "/a/{id}/sub/sub2",
             "operations": [
                 {

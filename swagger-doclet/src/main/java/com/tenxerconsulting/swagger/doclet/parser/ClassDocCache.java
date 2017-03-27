@@ -50,9 +50,11 @@ public class ClassDocCache {
 	 * @return The class doc or null if none matched
 	 */
 	public ClassDoc findByType(Type type) {
-		String typeName = getTypeName(type);
-		if (typeName != null) {
-			return this.typeNameToClass.get(typeName);
+		if (type != null) {
+			String typeName = getTypeName(type);
+			if (typeName != null) {
+				return this.typeNameToClass.get(typeName);
+			}
 		}
 		return null;
 	}

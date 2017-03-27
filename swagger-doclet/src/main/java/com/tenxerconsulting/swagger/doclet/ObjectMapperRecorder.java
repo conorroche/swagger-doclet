@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.tenxerconsulting.swagger.doclet.model.ApiDeclaration;
 import com.tenxerconsulting.swagger.doclet.model.ResourceListing;
+import io.swagger.models.Swagger;
 
 /**
  * The ObjectMapperRecorder represents a mapper for writing swagger objects to files
@@ -116,4 +117,8 @@ public class ObjectMapperRecorder implements Recorder {
 		this.mapper.writeValue(file, listing);
 	}
 
+	@Override
+	public void record(File file, Swagger swagger) throws IOException {
+		this.mapper.writeValue(file, swagger);
+	}
 }
