@@ -10,7 +10,7 @@ This is a JavaDoc Doclet that can be used to generate a JSON Swagger resource li
 This was originally forked from [Ryan Kennedy's original doclet](https://github.com/ryankennedy/swagger-jaxrs-doclet) to add support for swagger 1.2 into [Carma's doclet] (https://github.com/teamcarma/swagger-jaxrs-doclet/). This fork has been forked from the Carma version as I have changed companies and will be
 actively maintaining this fork instead and the Carma one is unlikely to be maintained.
 
-##Why Use This Doclet?
+## Why Use This Doclet?
 
 + As the JSON resource listing  is generated offline from source code it means that you do not need to add any runtime dependencies to your project and avoid potential headaches with different jar versions and jaxrs implementations. This also avoids increasing the size of your artifacts. 
 + The offline approach also allows you to post process the JSON if you wish. 
