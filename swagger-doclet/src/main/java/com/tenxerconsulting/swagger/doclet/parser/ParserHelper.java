@@ -531,6 +531,19 @@ public class ParserHelper {
 	}
 
 	/**
+	 * This gets the FQN of a method response type from tags.
+	 * @param methodDoc The method
+	 * @param options The doclet options
+	 * @return The FQN of the response type tag or null if none found
+	 * @see com.tenxerconsulting.swagger.doclet.parser.ApiMethodParser.readCustomReturnType(String, ClassDoc[])
+	 */
+	public static String responseTypeTagOf(MethodDoc methodDoc, DocletOptions options) {
+		// looking for a custom return type, this is useful where we return a jaxrs Response in the method signature
+		// but typically return a different object in its entity (such as for a 201 created response)
+		return getInheritableTagValue(methodDoc, options.getResponseTypeTags(), options);
+	}
+
+	/**
 	 * This gets parameterized types of the given type substituting variable types if necessary
 	 * @param type The raw type such as Batch&lt;Item&gt; or Batch&lt;T, Y&gt;
 	 * @param varsToTypes A map of variable name to types

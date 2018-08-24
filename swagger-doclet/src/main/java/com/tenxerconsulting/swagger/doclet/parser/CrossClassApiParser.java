@@ -40,7 +40,7 @@ public class CrossClassApiParser {
 	private final String basePath;
 
 	private final Method parentMethod;
-	private final Map<Type, ClassDoc> subResourceClasses;
+	private final ClassDocCache subResourceClasses;
 	private final Collection<ClassDoc> typeClasses;
 
 	/**
@@ -56,17 +56,7 @@ public class CrossClassApiParser {
 	 */
 	public CrossClassApiParser(DocletOptions options, ClassDoc classDoc, Collection<ClassDoc> classes, Map<Type, ClassDoc> subResourceClasses,
 			Collection<ClassDoc> typeClasses, String swaggerVersion, String apiVersion, String basePath) {
-		super();
-		this.options = options;
-		this.classDoc = classDoc;
-		this.classes = classes;
-		this.typeClasses = typeClasses;
-		this.subResourceClasses = subResourceClasses;
-		this.rootPath = ParserHelper.resolveClassPath(classDoc, options);
-		this.swaggerVersion = swaggerVersion;
-		this.apiVersion = apiVersion;
-		this.basePath = basePath;
-		this.parentMethod = null;
+		this(options, classDoc, classes, new ClassDocCache(subResourceClasses == null ? Collections.emptyList() : subResourceClasses.values()), typeClasses, swaggerVersion, apiVersion, basePath, null, "");
 	}
 
 	/**
@@ -82,7 +72,7 @@ public class CrossClassApiParser {
 	 * @param parentMethod The parent method that "owns" this sub resource
 	 * @param parentResourcePath The parent resource path
 	 */
-	public CrossClassApiParser(DocletOptions options, ClassDoc classDoc, Collection<ClassDoc> classes, Map<Type, ClassDoc> subResourceClasses,
+	protected CrossClassApiParser(DocletOptions options, ClassDoc classDoc, Collection<ClassDoc> classes, ClassDocCache subResourceClasses,
 			Collection<ClassDoc> typeClasses, String swaggerVersion, String apiVersion, String basePath, Method parentMethod, String parentResourcePath) {
 		super();
 		this.options = options;
@@ -95,6 +85,9 @@ public class CrossClassApiParser {
 		this.apiVersion = apiVersion;
 		this.basePath = basePath;
 		this.parentMethod = parentMethod;
+		if (this.options.isLogDebug()) {
+			System.out.println("sub-resource classes: " + this.subResourceClasses);
+		}
 	}
 
 	/**
@@ -157,7 +150,7 @@ public class CrossClassApiParser {
 			String classResourceDescription = ParserHelper.getInheritableTagValue(currentClassDoc, this.options.getResourceDescriptionTags(), this.options);
 
 			// check if its a sub resource
-			boolean isSubResourceClass = this.subResourceClasses != null && this.subResourceClasses.values().contains(currentClassDoc);
+			boolean isSubResourceClass = this.subResourceClasses.findByType(currentClassDoc) != null;
 
 			// dont process a subresource outside the context of its parent method
 			if (isSubResourceClass && this.parentMethod == null) {
@@ -191,7 +184,8 @@ public class CrossClassApiParser {
 						if (this.options.isLogDebug()) {
 							System.out.println("parsing method: " + method.name() + " as a subresource");
 						}
-						ClassDoc subResourceClassDoc = classCache.findByType(method.returnType());
+						String responseTypeTag = ParserHelper.responseTypeTagOf(method, this.options);
+						ClassDoc subResourceClassDoc = responseTypeTag == null ? classCache.findByType(method.returnType()) : classCache.findByName(responseTypeTag);
 						if (subResourceClassDoc != null) {
 							// delete class from the dictionary to handle recursive sub-resources
 							Collection<ClassDoc> shrunkClasses = new ArrayList<ClassDoc>(this.classes);
