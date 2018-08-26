@@ -354,6 +354,10 @@ public class ParserHelper {
 			return new String[] { "array", null };
 		} else if (isArray(javaType)) {
 			return new String[] { "array", null };
+		} else if (isMap(javaType)) {
+			// Swagger Spec 1.2 has no support for further specifying dict key/value type
+			// (unlike additionalProperties in OAS 2, see https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md)
+			return new String[] { "object", null };
 		} else if (javaType.equalsIgnoreCase("java.io.File")) {
 			// special handling of files, the datatype File is reserved for multipart
 			return new String[] { "JavaFile", null };
@@ -528,6 +532,19 @@ public class ParserHelper {
 	public static String[] primitiveTypeOf(Type type, DocletOptions options) {
 		String javaType = getQualifiedTypeName(type);
 		return primitiveTypeOf(javaType, options);
+	}
+
+	/**
+	 * This gets the FQN of a method response type from tags.
+	 * @param methodDoc The method
+	 * @param options The doclet options
+	 * @return The FQN of the response type tag or null if none found
+	 * @see com.tenxerconsulting.swagger.doclet.parser.ApiMethodParser.readCustomReturnType(String, ClassDoc[])
+	 */
+	public static String responseTypeTagOf(MethodDoc methodDoc, DocletOptions options) {
+		// looking for a custom return type, this is useful where we return a jaxrs Response in the method signature
+		// but typically return a different object in its entity (such as for a 201 created response)
+		return getInheritableTagValue(methodDoc, options.getResponseTypeTags(), options);
 	}
 
 	/**

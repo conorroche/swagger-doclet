@@ -176,7 +176,7 @@ public class ApiMethodParser {
 
 		// look for a custom return type, this is useful where we return a jaxrs Response in the method signature
 		// but typically return a different object in its entity (such as for a 201 created response)
-		String customReturnTypeName = ParserHelper.getInheritableTagValue(this.methodDoc, this.options.getResponseTypeTags(), this.options);
+		String customReturnTypeName = ParserHelper.responseTypeTagOf(this.methodDoc, this.options);
 		NameToType nameToType = readCustomReturnType(customReturnTypeName, viewClasses);
 		if (nameToType != null) {
 			returnTypeName = nameToType.returnTypeName;
