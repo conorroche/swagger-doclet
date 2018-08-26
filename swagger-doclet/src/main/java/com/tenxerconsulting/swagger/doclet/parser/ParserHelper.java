@@ -354,6 +354,10 @@ public class ParserHelper {
 			return new String[] { "array", null };
 		} else if (isArray(javaType)) {
 			return new String[] { "array", null };
+		} else if (isMap(javaType)) {
+			// Swagger Spec 1.2 has no support for further specifying dict key/value type
+			// (unlike additionalProperties in OAS 2, see https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md)
+			return new String[] { "object", null };
 		} else if (javaType.equalsIgnoreCase("java.io.File")) {
 			// special handling of files, the datatype File is reserved for multipart
 			return new String[] { "JavaFile", null };
