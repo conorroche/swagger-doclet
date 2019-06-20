@@ -178,12 +178,14 @@ To use the Swagger Doclet in your Maven project, add the following to your POM f
                             <doclet>com.tenxerconsulting.swagger.doclet.ServiceDoclet</doclet>
                             <docletArtifact>
                                 <groupId>com.tenxerconsulting</groupId>
-								<artifactId>swagger-doclet</artifactId>
-        						<version>1.0.7</version>
-        					</docletArtifact>
+                                <artifactId>swagger-doclet</artifactId>
+                                <version>1.0.7</version>
+                            </docletArtifact>
                             <reportOutputDirectory>${project.build.outputDirectory}</reportOutputDirectory>
                             <useStandardDocletOptions>false</useStandardDocletOptions>
-                            <additionalparam>-apiVersion 1 -docBasePath http://myapi -apiBasePath http://myapi</additionalparam>
+                            <additionalOptions>
+                                -apiVersion 1 -docBasePath http://myapi -apiBasePath http://myapi
+                            </additionalOptions>
                         </configuration>
                         <goals>
                             <goal>javadoc</goal>
@@ -420,7 +422,7 @@ Note: If you are using a snapshot version then these are deployed in the sonatyp
  3. A string path param with allowable values A and B and a default value of A and a description:
  @implicitParam p3|string|path|true|A|||A,B||test<br>
  <br><b>Note that if you want to add a non primitive e.g. object type as an implicit parameter it must be given the paramType of body.</b>
-</td><td>operations, resource class</td><td>@additionalParam,@extraParam</td></tr>
+</td><td>operations, resource class</td><td>@additionalOptions,@extraParam</td></tr>
 	
 	
 	<tr><td>@paramsFormat</td><td>Defines the format for one or more of the parameters of an operation. This uses a format of space separated name and value pairs e.g.  param1Name param1Format param2Name param2Format. Note that this is only used for types that do not already map to a predefined format; which primarily means string type. NOTE2: The values for the name of the parameter in this CSV must be the raw name in the method signature/bean param field not the name as derived via an annotation or javadoc tag.</td><td>operations</td><td>@formats</td></tr>
@@ -816,7 +818,7 @@ These are options that you typically won't need to use unless for example, you w
 	
 	<tr><td>-csvParamsTags</td><td>This adds additional tags to the list of javadoc tags used for setting whether operation parameters are csv/multi valued. The default list contains csvParams. NOTE: The values in the doclet option should NOT have the @ symbol on them.</td></tr>
 	
-	<tr><td>-implicitParamTags</td><td>This adds additional tags to the list of javadoc tags used for adding additional resource method parameters. The default list contains implicitParam,additionalParam,extraParam. NOTE: The values in the doclet option should NOT have the @ symbol on them.</td></tr>
+	<tr><td>-implicitParamTags</td><td>This adds additional tags to the list of javadoc tags used for adding additional resource method parameters. The default list contains implicitParam,additionalOptions,extraParam. NOTE: The values in the doclet option should NOT have the @ symbol on them.</td></tr>
 	
 	<tr><td>-paramsFormatTags</td><td>This adds additional tags to the list of javadoc tags used for setting formats for operation parameters. The default list contains paramsFormat, formats. NOTE: The values in the doclet option should NOT have the @ symbol on them.</td></tr>
 	
@@ -920,16 +922,16 @@ $
 
 ## Override Swagger UI
 
-To override the Swagger UI included with the doclet, you can either use your own zip or your own directory and add the swaggerUiPath option to the additionalparam attribute in the pom file.
+To override the Swagger UI included with the doclet, you can either use your own zip or your own directory and add the swaggerUiPath option to the additionalOptions attribute in the pom file.
 
 Here is an example pointing to a zip file:
 
 ```
-<additionalparam>-apiVersion 1 -docBasePath /apidocs -apiBasePath / -swaggerUiPath ../../../src/main/resources/swagger-ui.zip</additionalparam>
+<additionalOptions>-apiVersion 1 -docBasePath /apidocs -apiBasePath / -swaggerUiPath ../../../src/main/resources/swagger-ui.zip</additionalOptions>
 ```
 
 Here is an example pointing to a directory:
 
 ```
-<additionalparam>-apiVersion 1 -docBasePath /apidocs  -apiBasePath / -swaggerUiPath ../../../src/main/resources/swagger-ui/</additionalparam>
+<additionalOptions>-apiVersion 1 -docBasePath /apidocs  -apiBasePath / -swaggerUiPath ../../../src/main/resources/swagger-ui/</additionalOptions>
 ```
